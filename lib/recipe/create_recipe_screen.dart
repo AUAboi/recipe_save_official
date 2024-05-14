@@ -1,33 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:recipe_save_official/app_drawer.dart';
+import 'package:recipe_save_official/recipe/cubit/recipe_form_validator_cubit.dart';
 
-final pageIndexProvider = StateProvider<int>((ref) => 0);
-
-final formDataProvider = StateProvider<Map<String, String>>((ref) => {
-      'recipe_name': '',
-      'servings': '',
-      'desc': '',
-      // Add more form fields as needed
-    });
-
-class CreateRecipeScreen extends ConsumerStatefulWidget {
+class CreateRecipeScreen extends StatefulWidget {
   const CreateRecipeScreen({super.key});
 
   @override
-  ConsumerState<CreateRecipeScreen> createState() => _CreateScreenState();
+  State<CreateRecipeScreen> createState() => _CreateScreenState();
 }
 
-class _CreateScreenState extends ConsumerState<CreateRecipeScreen> {
+class _CreateScreenState extends State<CreateRecipeScreen> {
   late PageController _pageViewController;
 
   late final List<StepWidget> _pages = [FirstPage(), SecondPage(), ThirdPage()];
 
-  final Map<String, String> formData = {
-    'recipe_name': '',
-    'serving_size': '',
-    'desc': '',
-  };
+  int _currentPageIndex = 0;
+
+  final RecipeFormValidatorCubit _recipeFormValidatorCubit =
+      RecipeFormValidatorCubit();
 
   @override
   void initState() {
@@ -43,9 +34,6 @@ class _CreateScreenState extends ConsumerState<CreateRecipeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final index = ref.watch(pageIndexProvider);
-    StateController<int> counter = ref.watch(pageIndexProvider.notifier);
-
     return Scaffold(
         appBar: AppBar(
           title: const Text("Create a recipe"),
@@ -59,7 +47,7 @@ class _CreateScreenState extends ConsumerState<CreateRecipeScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 60),
                 child: LinearProgressIndicator(
-                  value: (index + 1) / _pages.length,
+                  value: (_currentPageIndex + 1) / _pages.length,
                   borderRadius: BorderRadius.circular(10),
                   minHeight: 10,
                 ),
@@ -73,7 +61,7 @@ class _CreateScreenState extends ConsumerState<CreateRecipeScreen> {
                     padEnds: true,
                     onPageChanged: (value) {
                       setState(() {
-                        counter.state = value;
+                        _currentPageIndex = value;
                       });
                     },
                     children: _pages,
@@ -85,14 +73,15 @@ class _CreateScreenState extends ConsumerState<CreateRecipeScreen> {
                 children: [
                   TextButton(
                       onPressed: () {
-                        _updateCurrentPageIndex(index - 1);
+                        _updateCurrentPageIndex(_currentPageIndex - 1);
                       },
                       child: const Text('Back')),
                   TextButton(
                       onPressed: () {
-                        if (_pages[index].validate()) {
-                          _updateCurrentPageIndex(index + 1);
-                        }
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text("fa"),
+                          backgroundColor: Colors.red,
+                        ));
                       },
                       child: const Text('Next'))
                 ],
@@ -111,7 +100,7 @@ class _CreateScreenState extends ConsumerState<CreateRecipeScreen> {
   }
 }
 
-abstract class StepWidget extends ConsumerWidget {
+abstract class StepWidget extends StatelessWidget {
   const StepWidget({super.key});
 
   bool validate();
@@ -122,48 +111,38 @@ class FirstPage extends StepWidget {
 
   final _formKey = GlobalKey<FormState>();
 
+  final RecipeFormValidatorCubit _recipeFormValidatorCubit =
+      RecipeFormValidatorCubit();
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final formDataNotifier = ref.watch(formDataProvider.notifier);
-    final formData = ref.watch(formDataProvider);
-
-    return Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            TextFormField(
-              initialValue: formData['recipe_name'],
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter some text';
-                }
-                return null;
-              },
-              onChanged: (value) =>
-                  formDataNotifier.state['recipe_name'] = value,
-              decoration: const InputDecoration(labelText: 'Recipe Name'),
-            ),
-            const SizedBox(
-              height: 34.0,
-            ),
-            TextFormField(
-              initialValue: formData['serving_size'],
-              validator: (value) {
-                RegExp regex = RegExp(r'^\d+(-\d+)?$');
-
-                if (value == null || value.isEmpty || !regex.hasMatch(value)) {
-                  return 'Please enter number of servings like 3 or 3-4';
-                }
-
-                return null;
-              },
-              onChanged: (value) =>
-                  formDataNotifier.state['serving_size'] = value,
-              decoration: const InputDecoration(
-                  labelText: 'Servings', hintText: 'eg. 3-4'),
-            )
-          ],
-        ));
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        BlocSelector<RecipeFormValidatorCubit, RecipeFormValidatorState,
+                AutovalidateMode>(
+            bloc: _recipeFormValidatorCubit,
+            selector: (state) => state.autovalidateMode,
+            builder: (context, AutovalidateMode autovalidateMode) {
+              return Form(
+                  child: Column(children: [
+                TextFormField(
+                  onChanged: (value) =>
+                      _recipeFormValidatorCubit.recipeNameChanged(value),
+                  decoration: const InputDecoration(labelText: 'Recipe Name'),
+                ),
+                const SizedBox(
+                  height: 34.0,
+                ),
+                TextFormField(
+                  onChanged: (value) =>
+                      _recipeFormValidatorCubit.servingSizeChanged(value),
+                  decoration: const InputDecoration(
+                      labelText: 'Servings', hintText: 'eg. 3-4'),
+                )
+              ]));
+            })
+      ],
+    );
   }
 
   @override
@@ -178,7 +157,7 @@ class SecondPage extends StepWidget {
   final _formKey = GlobalKey<FormState>();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Form(
         key: _formKey,
         child: Column(
@@ -208,7 +187,7 @@ class ThirdPage extends StepWidget {
   final _formKey = GlobalKey<FormState>();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Column(
       children: [
         TextFormField(

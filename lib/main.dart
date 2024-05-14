@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:recipe_save_official/app_drawer.dart';
-
-import 'create_recipe_screen.dart';
+import 'package:recipe_save_official/recipe/create_recipe_screen.dart';
 
 /// The route configuration.
 final GoRouter _router = GoRouter(
@@ -35,7 +33,7 @@ final GoRouter _router = GoRouter(
 );
 
 void main() {
-  runApp(const ProviderScope(child: CookBookApp()));
+  runApp(const CookBookApp());
 }
 
 class CookBookApp extends StatelessWidget {
