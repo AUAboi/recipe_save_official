@@ -64,7 +64,7 @@ class _CreateScreenState extends ConsumerState<CreateRecipeScreen> {
                   minHeight: 10,
                 ),
               ),
-              Flexible(
+              Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(15),
                   child: PageView(
@@ -80,18 +80,19 @@ class _CreateScreenState extends ConsumerState<CreateRecipeScreen> {
                   ),
                 ),
               ),
-              Expanded(
+              Flexible(
                   child: Row(
                 children: [
                   TextButton(
                       onPressed: () {
-                        if (_pages[index].validate())
-                          _updateCurrentPageIndex(index - 1);
+                        _updateCurrentPageIndex(index - 1);
                       },
                       child: const Text('Back')),
                   TextButton(
                       onPressed: () {
-                        _updateCurrentPageIndex(index + 1);
+                        if (_pages[index].validate()) {
+                          _updateCurrentPageIndex(index + 1);
+                        }
                       },
                       child: const Text('Next'))
                 ],
@@ -123,28 +124,41 @@ class FirstPage extends StepWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final formData = ref.watch(formDataProvider.notifier);
+    final formDataNotifier = ref.watch(formDataProvider.notifier);
+    final formData = ref.watch(formDataProvider);
 
     return Form(
         key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           children: [
             TextFormField(
+              initialValue: formData['recipe_name'],
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter some text';
                 }
                 return null;
               },
-              onChanged: (value) => formData.state['recipe_name'] = value,
+              onChanged: (value) =>
+                  formDataNotifier.state['recipe_name'] = value,
               decoration: const InputDecoration(labelText: 'Recipe Name'),
             ),
             const SizedBox(
               height: 34.0,
             ),
             TextFormField(
-              onChanged: (value) => formData.state['serving_size'] = value,
+              initialValue: formData['serving_size'],
+              validator: (value) {
+                RegExp regex = RegExp(r'^\d+(-\d+)?$');
+
+                if (value == null || value.isEmpty || !regex.hasMatch(value)) {
+                  return 'Please enter number of servings like 3 or 3-4';
+                }
+
+                return null;
+              },
+              onChanged: (value) =>
+                  formDataNotifier.state['serving_size'] = value,
               decoration: const InputDecoration(
                   labelText: 'Servings', hintText: 'eg. 3-4'),
             )
@@ -165,19 +179,21 @@ class SecondPage extends StepWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      children: [
-        TextFormField(
-          decoration: const InputDecoration(labelText: 'Page 2'),
-        ),
-        const SizedBox(
-          height: 34.0,
-        ),
-        TextFormField(
-          decoration: const InputDecoration(labelText: 'Servings'),
-        )
-      ],
-    );
+    return Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            TextFormField(
+              decoration: const InputDecoration(labelText: 'Page 2'),
+            ),
+            const SizedBox(
+              height: 34.0,
+            ),
+            TextFormField(
+              decoration: const InputDecoration(labelText: 'Servings'),
+            )
+          ],
+        ));
   }
 
   @override
