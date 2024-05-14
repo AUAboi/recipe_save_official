@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:recipe_save_official/app_drawer.dart';
 
@@ -34,7 +35,7 @@ final GoRouter _router = GoRouter(
 );
 
 void main() {
-  runApp(const CookBookApp());
+  runApp(const ProviderScope(child: CookBookApp()));
 }
 
 class CookBookApp extends StatelessWidget {

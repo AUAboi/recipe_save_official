@@ -1,19 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:recipe_save_official/app_drawer.dart';
 
-class CreateRecipeScreen extends StatefulWidget {
+final pageIndexProvider = StateProvider<int>((ref) => 0);
+
+final formDataProvider = StateProvider<Map<String, String>>((ref) => {
+      'recipe_name': '',
+      'servings': '',
+      'desc': '',
+      // Add more form fields as needed
+    });
+
+class CreateRecipeScreen extends ConsumerStatefulWidget {
   const CreateRecipeScreen({super.key});
 
   @override
-  State<CreateRecipeScreen> createState() => _CreateScreenState();
+  ConsumerState<CreateRecipeScreen> createState() => _CreateScreenState();
 }
 
-class _CreateScreenState extends State<CreateRecipeScreen> {
-  final _pages = [const FirstPage(), const SecondPage(), const ThirdPage()];
-
+class _CreateScreenState extends ConsumerState<CreateRecipeScreen> {
   late PageController _pageViewController;
 
-  int currentPage = 0;
+  late final List<StepWidget> _pages = [FirstPage(), SecondPage(), ThirdPage()];
+
+  final Map<String, String> formData = {
+    'recipe_name': '',
+    'serving_size': '',
+    'desc': '',
+  };
 
   @override
   void initState() {
@@ -29,9 +43,12 @@ class _CreateScreenState extends State<CreateRecipeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final index = ref.watch(pageIndexProvider);
+    StateController<int> counter = ref.watch(pageIndexProvider.notifier);
+
     return Scaffold(
         appBar: AppBar(
-          title: const Text('Create a recipe'),
+          title: const Text("Create a recipe"),
         ),
         drawer: const AppDrawer(),
         body: Container(
@@ -42,7 +59,7 @@ class _CreateScreenState extends State<CreateRecipeScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 60),
                 child: LinearProgressIndicator(
-                  value: (currentPage + 1) / _pages.length,
+                  value: (index + 1) / _pages.length,
                   borderRadius: BorderRadius.circular(10),
                   minHeight: 10,
                 ),
@@ -56,7 +73,7 @@ class _CreateScreenState extends State<CreateRecipeScreen> {
                     padEnds: true,
                     onPageChanged: (value) {
                       setState(() {
-                        currentPage = value;
+                        counter.state = value;
                       });
                     },
                     children: _pages,
@@ -66,19 +83,19 @@ class _CreateScreenState extends State<CreateRecipeScreen> {
               Expanded(
                   child: Row(
                 children: [
-                  if (currentPage != 0)
-                    TextButton(
-                        onPressed: () =>
-                            {_updateCurrentPageIndex(currentPage - 1)},
-                        child: const Text('Back')),
-                  const Spacer(),
-                  if (currentPage != _pages.length - 1)
-                    TextButton(
-                        onPressed: () =>
-                            {_updateCurrentPageIndex(currentPage + 1)},
-                        child: const Text('Next'))
+                  TextButton(
+                      onPressed: () {
+                        if (_pages[index].validate())
+                          _updateCurrentPageIndex(index - 1);
+                      },
+                      child: const Text('Back')),
+                  TextButton(
+                      onPressed: () {
+                        _updateCurrentPageIndex(index + 1);
+                      },
+                      child: const Text('Next'))
                 ],
-              )),
+              ))
             ],
           ),
         ));
@@ -93,32 +110,61 @@ class _CreateScreenState extends State<CreateRecipeScreen> {
   }
 }
 
-class FirstPage extends StatelessWidget {
-  const FirstPage({super.key});
+abstract class StepWidget extends ConsumerWidget {
+  const StepWidget({super.key});
+
+  bool validate();
+}
+
+class FirstPage extends StepWidget {
+  FirstPage({super.key});
+
+  final _formKey = GlobalKey<FormState>();
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        TextFormField(
-          decoration: const InputDecoration(labelText: 'Recipe Name'),
-        ),
-        const SizedBox(
-          height: 34.0,
-        ),
-        TextFormField(
-          decoration: const InputDecoration(labelText: 'Servings'),
-        )
-      ],
-    );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final formData = ref.watch(formDataProvider.notifier);
+
+    return Form(
+        key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        child: Column(
+          children: [
+            TextFormField(
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter some text';
+                }
+                return null;
+              },
+              onChanged: (value) => formData.state['recipe_name'] = value,
+              decoration: const InputDecoration(labelText: 'Recipe Name'),
+            ),
+            const SizedBox(
+              height: 34.0,
+            ),
+            TextFormField(
+              onChanged: (value) => formData.state['serving_size'] = value,
+              decoration: const InputDecoration(
+                  labelText: 'Servings', hintText: 'eg. 3-4'),
+            )
+          ],
+        ));
+  }
+
+  @override
+  bool validate() {
+    return _formKey.currentState!.validate();
   }
 }
 
-class SecondPage extends StatelessWidget {
-  const SecondPage({super.key});
+class SecondPage extends StepWidget {
+  SecondPage({super.key});
+
+  final _formKey = GlobalKey<FormState>();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         TextFormField(
@@ -133,13 +179,20 @@ class SecondPage extends StatelessWidget {
       ],
     );
   }
-}
-
-class ThirdPage extends StatelessWidget {
-  const ThirdPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  bool validate() {
+    return _formKey.currentState!.validate();
+  }
+}
+
+class ThirdPage extends StepWidget {
+  ThirdPage({super.key});
+
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         TextFormField(
@@ -153,5 +206,10 @@ class ThirdPage extends StatelessWidget {
         )
       ],
     );
+  }
+
+  @override
+  bool validate() {
+    return _formKey.currentState!.validate();
   }
 }
