@@ -13,15 +13,11 @@ class RecipeNameInput extends FormzInput<String, RecipeNameValidationError> {
   }
 }
 
-enum ServingSizeValidationError { empty }
-
-class ServingSizeInput extends FormzInput<String, ServingSizeValidationError> {
-  const ServingSizeInput.pure() : super.pure('');
-
-  const ServingSizeInput.dirty({String value = ''}) : super.dirty(value);
-
-  @override
-  ServingSizeValidationError? validator(String value) {
-    return value.isNotEmpty ? null : ServingSizeValidationError.empty;
+extension RecipeNameValidationErrorExtension on RecipeNameValidationError {
+  String text() {
+    switch (this) {
+      case RecipeNameValidationError.empty:
+        return 'Please enter a name for this recipe';
+    }
   }
 }

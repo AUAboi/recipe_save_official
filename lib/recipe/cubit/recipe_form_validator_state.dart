@@ -1,22 +1,28 @@
 part of 'recipe_form_validator_cubit.dart';
 
 @immutable
-sealed class RecipeFormValidatorState {
+class RecipeFormValidatorState {
   final AutovalidateMode autovalidateMode;
-  final String recipeName;
-  final String servingSize;
+  final RecipeNameInput recipeName;
+  final ServingSizeInput servingSize;
 
   const RecipeFormValidatorState({
     this.autovalidateMode = AutovalidateMode.disabled,
-    this.recipeName = '',
-    this.servingSize = '',
+    this.recipeName = const RecipeNameInput.pure(),
+    this.servingSize = const ServingSizeInput.pure(),
   });
 
   RecipeFormValidatorState copyWith({
     AutovalidateMode? autovalidateMode,
-    String? recipeName,
-    String? servingSize,
-  });
+    RecipeNameInput? recipeName,
+    ServingSizeInput? servingSize,
+  }) {
+    return RecipeFormValidatorState(
+      autovalidateMode: autovalidateMode ?? this.autovalidateMode,
+      recipeName: recipeName ?? this.recipeName,
+      servingSize: servingSize ?? this.servingSize,
+    );
+  }
 }
 
 final class RecipeFormValidatorInitial extends RecipeFormValidatorState {
@@ -29,8 +35,8 @@ final class RecipeFormValidatorInitial extends RecipeFormValidatorState {
   @override
   RecipeFormValidatorInitial copyWith({
     AutovalidateMode? autovalidateMode,
-    String? recipeName,
-    String? servingSize,
+    RecipeNameInput? recipeName,
+    ServingSizeInput? servingSize,
   }) {
     return RecipeFormValidatorInitial(
       autovalidateMode: autovalidateMode ?? this.autovalidateMode,

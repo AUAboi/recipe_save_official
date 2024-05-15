@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:recipe_save_official/app_drawer.dart';
 import 'package:recipe_save_official/recipe/cubit/recipe_form_validator_cubit.dart';
+import 'package:recipe_save_official/recipe/inputs/recipe_name_input.dart';
+import 'package:recipe_save_official/recipe/inputs/serving_size_input.dart';
 
 class CreateRecipeScreen extends StatefulWidget {
   const CreateRecipeScreen({super.key});
@@ -41,58 +44,44 @@ class _CreateScreenState extends State<CreateRecipeScreen> {
         body: BlocProvider(
             create: (context) => RecipeFormValidatorCubit(),
             child: Container(
-              margin: const EdgeInsets.only(left: 24.0, right: 24.0),
-              child: BlocBuilder<RecipeFormValidatorCubit,
-                  RecipeFormValidatorState>(
-                builder: (context, state) {
-                  return Column(
-                    children: [
-                      Text(state.recipeName),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(15),
-                          child: Form(
-                            key: _formKey,
-                            child: TextFormField(
-                              onChanged: (value) => context
-                                  .read<RecipeFormValidatorCubit>()
-                                  .recipeNameChanged(value),
-                              decoration: const InputDecoration(
-                                  labelText: 'Recipe Name'),
-                            ),
-                          ),
-                          // child: PageView(
-                          //   controller: _pageViewController,
-                          //   physics: const NeverScrollableScrollPhysics(),
-                          //   padEnds: true,
-                          //   onPageChanged: (value) {
-                          //     setState(() {
-                          //       _currentPageIndex = value;
-                          //     });
-                          //   },
-                          //   children: _pages,
-                          // ),
+                margin: const EdgeInsets.only(left: 24.0, right: 24.0),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(15),
+                        child: PageView(
+                          controller: _pageViewController,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padEnds: true,
+                          onPageChanged: (value) {
+                            setState(() {
+                              _currentPageIndex = value;
+                            });
+                          },
+                          children: _pages,
                         ),
                       ),
-                      Flexible(
-                          child: Row(
-                        children: [
-                          TextButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(SnackBar(
-                                  content: Text(state.recipeName),
-                                  backgroundColor: Colors.red,
-                                ));
-                              },
-                              child: const Text('Next')),
-                        ],
-                      ))
-                    ],
-                  );
-                },
-              ),
-            )));
+                    ),
+                    Flexible(
+                        child: Row(
+                      children: [
+                        TextButton(
+                            onPressed: () {
+                              _updateCurrentPageIndex(_currentPageIndex - 1);
+                            },
+                            child: const Text('Back')),
+                        TextButton(
+                            onPressed: () {
+                              if (_pages[_currentPageIndex].validate()) {
+                                _updateCurrentPageIndex(_currentPageIndex + 1);
+                              }
+                            },
+                            child: const Text('Next'))
+                      ],
+                    ))
+                  ],
+                ))));
   }
 
   void _updateCurrentPageIndex(int index) {
@@ -115,36 +104,44 @@ class FirstPage extends StepWidget {
 
   final _formKey = GlobalKey<FormState>();
 
-  final RecipeFormValidatorCubit _recipeFormValidatorCubit =
-      RecipeFormValidatorCubit();
-
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        BlocSelector<RecipeFormValidatorCubit, RecipeFormValidatorState,
-                AutovalidateMode>(
-            bloc: _recipeFormValidatorCubit,
-            selector: (state) => state.autovalidateMode,
-            builder: (context, AutovalidateMode autovalidateMode) {
-              return Form(
-                  child: Column(children: [
+        BlocBuilder<RecipeFormValidatorCubit, RecipeFormValidatorState>(
+            builder: (context, state) {
+          return Form(
+              key: _formKey,
+              child: Column(children: [
+                Text(state.recipeName.value),
                 TextFormField(
-                  onChanged: (value) =>
-                      _recipeFormValidatorCubit.recipeNameChanged(value),
+                  initialValue: state.recipeName.value,
+                  onChanged: (value) => context
+                      .read<RecipeFormValidatorCubit>()
+                      .recipeNameChanged(value),
                   decoration: const InputDecoration(labelText: 'Recipe Name'),
+                  validator: (value) =>
+                      state.recipeName.validator(value ?? '')?.text(),
                 ),
                 const SizedBox(
-                  height: 34.0,
+                  height: 44.0,
                 ),
                 TextFormField(
-                  onChanged: (value) =>
-                      _recipeFormValidatorCubit.servingSizeChanged(value),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp("[0-9]"))
+                  ],
+                  initialValue: state.servingSize.value,
+                  keyboardType: TextInputType.number,
+                  onChanged: (value) => context
+                      .read<RecipeFormValidatorCubit>()
+                      .servingSizeChanged(value),
+                  validator: (value) =>
+                      state.servingSize.validator(value ?? '')?.text(),
                   decoration: const InputDecoration(
                       labelText: 'Servings', hintText: 'eg. 3-4'),
                 )
               ]));
-            })
+        })
       ],
     );
   }
@@ -165,7 +162,19 @@ class SecondPage extends StepWidget {
     return Form(
         key: _formKey,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(
+              height: 6.0,
+            ),
+            const Text(
+              'Add Ingredients',
+              textAlign: TextAlign.start,
+              style: TextStyle(fontSize: 24.0),
+            ),
+            const SizedBox(
+              height: 34.0,
+            ),
             TextFormField(
               decoration: const InputDecoration(labelText: 'Page 2'),
             ),
