@@ -17,8 +17,7 @@ class _CreateScreenState extends State<CreateRecipeScreen> {
 
   int _currentPageIndex = 0;
 
-  final RecipeFormValidatorCubit _recipeFormValidatorCubit =
-      RecipeFormValidatorCubit();
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -39,56 +38,61 @@ class _CreateScreenState extends State<CreateRecipeScreen> {
           title: const Text("Create a recipe"),
         ),
         drawer: const AppDrawer(),
-        body: Container(
-          margin: const EdgeInsets.only(left: 24.0, right: 24.0),
-          child: Column(
-            children: [
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 60),
-                child: LinearProgressIndicator(
-                  value: (_currentPageIndex + 1) / _pages.length,
-                  borderRadius: BorderRadius.circular(10),
-                  minHeight: 10,
-                ),
+        body: BlocProvider(
+            create: (context) => RecipeFormValidatorCubit(),
+            child: Container(
+              margin: const EdgeInsets.only(left: 24.0, right: 24.0),
+              child: BlocBuilder<RecipeFormValidatorCubit,
+                  RecipeFormValidatorState>(
+                builder: (context, state) {
+                  return Column(
+                    children: [
+                      Text(state.recipeName),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(15),
+                          child: Form(
+                            key: _formKey,
+                            child: TextFormField(
+                              onChanged: (value) => context
+                                  .read<RecipeFormValidatorCubit>()
+                                  .recipeNameChanged(value),
+                              decoration: const InputDecoration(
+                                  labelText: 'Recipe Name'),
+                            ),
+                          ),
+                          // child: PageView(
+                          //   controller: _pageViewController,
+                          //   physics: const NeverScrollableScrollPhysics(),
+                          //   padEnds: true,
+                          //   onPageChanged: (value) {
+                          //     setState(() {
+                          //       _currentPageIndex = value;
+                          //     });
+                          //   },
+                          //   children: _pages,
+                          // ),
+                        ),
+                      ),
+                      Flexible(
+                          child: Row(
+                        children: [
+                          TextButton(
+                              onPressed: () {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(SnackBar(
+                                  content: Text(state.recipeName),
+                                  backgroundColor: Colors.red,
+                                ));
+                              },
+                              child: const Text('Next')),
+                        ],
+                      ))
+                    ],
+                  );
+                },
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(15),
-                  child: PageView(
-                    controller: _pageViewController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padEnds: true,
-                    onPageChanged: (value) {
-                      setState(() {
-                        _currentPageIndex = value;
-                      });
-                    },
-                    children: _pages,
-                  ),
-                ),
-              ),
-              Flexible(
-                  child: Row(
-                children: [
-                  TextButton(
-                      onPressed: () {
-                        _updateCurrentPageIndex(_currentPageIndex - 1);
-                      },
-                      child: const Text('Back')),
-                  TextButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text("fa"),
-                          backgroundColor: Colors.red,
-                        ));
-                      },
-                      child: const Text('Next'))
-                ],
-              ))
-            ],
-          ),
-        ));
+            )));
   }
 
   void _updateCurrentPageIndex(int index) {
